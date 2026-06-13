@@ -1,0 +1,46 @@
+# Voiceover (TTS) showcase — voz en español sobre el vídeo, sincronizada con las
+# captions. La voz se genera con edge-tts (gratis, sin key) y se cachea por hash.
+# Como narrateMp4 narra sobre captionsMp4, obtienes VOZ + SUBTÍTULOS en el mismo mp4.
+#
+#   node examples/mock-server.mjs
+#   node src/run.js examples/narrate.yml
+#
+# Nota: deja holds suficientes para que quepa cada narración. Si una se pasa, el log
+# te avisa; subes ese hold y re-renderizas (el audio ya está cacheado, es instantáneo).
+
+url: http://127.0.0.1:4317/
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+encode:
+  captionsMp4: out/work/narrate-cc.mp4   # intermedio (subs) → out/work/ (se autolimpia)
+  narrateMp4: out/narrate.mp4            # FINAL: voz + subtítulos
+  ttsOpts: { voice: es-ES-ElviraNeural }   # provider 'edge' por defecto
+
+steps:
+  - caption: 'Pregunta a tus datos en lenguaje natural'
+  - hold: 800
+  - type: { sel: 'demo-chat >>> textarea', text: 'Muéstrame las ventas por región.', cps: 38 }
+  - hold: 300
+  - click: 'demo-chat >>> button.send'
+
+  - caption: 'La respuesta llega en streaming, al instante'
+  - waitFor: 'demo-chat table'
+  - hold: 600
+  - zoomFit: 'demo-chat >>> table'
+  - hold: 2600
+  - resetZoom: true
+  - hold: 400
+
+  - caption: 'Y el dashboard se actualiza en vivo'
+  - click: { sel: 'nav a[href="/dashboard"]', nav: true }
+  - waitFor: '#chart'
+  - hold: 700
+  - zoomFit: { sel: '#chart', fill: 0.9 }
+  - hold: 2600
+  - resetZoom: true
+  - caption: ''
+  - hold: 500

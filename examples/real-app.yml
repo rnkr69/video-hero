@@ -1,0 +1,54 @@
+# Real-app template — point at your running app and make it deterministic by pinning
+# ONLY the non-deterministic requests; everything else hits the real backend.
+#
+#   $env:APP_URL="https://your-app.example.com"
+#   $env:DEMO_EMAIL="me@x.com"; $env:DEMO_PASSWORD="secret"
+#   node src/run.js examples/real-app.yml
+#
+# ${ENV_VAR} is substituted from the environment (keep secrets out of YAML).
+
+url: ${APP_URL}
+width: 1280
+height: 800
+scale: 2
+headless: true
+
+# Auth: if auth.json is missing, these login steps run once (headed) and the session is
+# saved + reused. Alternatively run `node scripts/login.mjs`. auth.json is gitignored.
+storageState: auth.json
+login:
+  url: ${APP_URL}/login
+  steps:
+    - type: { sel: 'input[type=email]', text: '${DEMO_EMAIL}' }
+    - type: { sel: 'input[type=password]', text: '${DEMO_PASSWORD}' }
+    - click: { sel: 'button[type=submit]', nav: true }
+    - waitFor: '.dashboard'
+
+# Selective interception — make the demo repeatable without a full mock backend.
+route:
+  # Pin a JSON endpoint to canned data (the common case):
+  - url: '**/api/dashboard*'
+    json:
+      data:
+        kpis: [{ label: 'Ventas', value: '3,23 M€' }]
+        chart: { labels: ['EU', 'NA', 'LATAM'], values: [1284500, 1057200, 486900] }
+  # Block telemetry / analytics noise:
+  - url: '**/analytics/**'
+    abort: true
+  # Streaming (SSE) can't be faked by fulfill (delivers at once). Redirect it to a local
+  # mock SSE server instead (same protocol required — works for http dev backends):
+  # - url: '**/chat/stream'
+  #   redirect: http://127.0.0.1:4317/chat/stream
+
+steps:
+  - hold: 800
+  - caption: 'Tu app, en acción'
+  - waitFor: '.dashboard'
+  - zoomFit: '.dashboard .chart'
+  - hold: 1800
+  - resetZoom: true
+
+encode:
+  captionsMp4: out/real-cc.mp4
+  narrateMp4: out/real.mp4
+  ttsOpts: { voice: es-ES-ElviraNeural }

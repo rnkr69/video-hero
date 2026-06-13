@@ -1,0 +1,55 @@
+# Subtítulos estilizados (vídeo + subs, sin voz). Estilo "trazo limpio": texto blanco con
+# borde/trazo oscuro, SIN caja negra, sombra suave y fade-in/out por cue. Todo configurable
+# bajo `captionsOpts.style` (objeto → camino ASS; un string seguiría siendo force_style legacy).
+#
+#   node examples/mock-server.mjs
+#   node src/run.js examples/styled-subs.yml
+
+url: http://127.0.0.1:4317/
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+encode:
+  captionsMp4: out/styled-subs.mp4
+  captionsOpts:
+    style:
+      font: Segoe UI
+      fontSize: 26
+      color: '#FFFFFF'
+      outlineColor: '#101010'   # el "trazo"
+      outline: 2
+      shadow: 0.5
+      bold: false
+      marginV: 56
+      fadeIn: 220               # ms
+      fadeOut: 220              # ms
+      # slideUp: 24             # opcional: desliza la entrada hacia arriba (ease)
+      # fontFile: C:/Windows/Fonts/segoeui.ttf   # solo si la fuente no está instalada
+
+steps:
+  - caption: 'Pregunta en lenguaje natural'
+  - hold: 800
+  - type: { sel: 'demo-chat >>> textarea', text: 'Muéstrame las ventas por región.', cps: 38 }
+  - hold: 300
+  - click: 'demo-chat >>> button.send'
+
+  - caption: 'Respuesta en streaming, al instante'
+  - waitFor: 'demo-chat table'
+  - hold: 500
+  - zoomFit: 'demo-chat >>> table'
+  - hold: 1800
+  - resetZoom: true
+  - hold: 400
+
+  - caption: 'Y el dashboard en vivo'
+  - click: { sel: 'nav a[href="/dashboard"]', nav: true }
+  - waitFor: '#chart'
+  - hold: 700
+  - zoomFit: { sel: '#chart', fill: 0.9 }
+  - hold: 1500
+  - resetZoom: true
+  - caption: ''
+  - hold: 500

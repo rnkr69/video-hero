@@ -1,0 +1,69 @@
+# Pack completo: INTRO (logo + título + animación) + VOZ + SUBTÍTULOS + MÚSICA de fondo con
+# ducking. La música baja ANTES del primer TTS, sube en los huecos largos entre TTS y vuelve
+# a subir tras el último. La intro se antepone al mp4 final.
+#
+#   node examples/mock-server.mjs
+#   node src/run.js examples/intro-music.yml
+#
+# Salidas: out/intro-demo.mp4 (voz+subs+música) y out/intro-demo-intro.mp4 (con la intro).
+
+url: http://127.0.0.1:4317/
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+encode:
+  captionsMp4: out/work/intro-demo-cc.mp4  # intermedio (subs) → out/work/
+  narrateMp4: out/intro-demo.mp4           # voz (la música se tiende como capa final)
+  ttsOpts:
+    voice: es-ES-ElviraNeural
+    music:
+      track: ambient-gold   # pista incluida (alias). Otras: sidewalk-chalk, she-said-i-wonder.
+      #                       O una ruta a tu propio audio. Lista: demo-recorder tracks
+      full: 0.85       # volumen alto (huecos / antes y después)
+      duck: 0.16       # volumen bajo (durante la voz)
+      lead: 1.2        # s: baja ANTES de cada TTS
+      tail: 0.8        # s: tarda en subir tras cada TTS
+      gapRaise: 3.0    # s: hueco mínimo entre TTS para volver a 'full'
+      ramp: 0.4        # s: duración de cada rampa
+      fadeIn: 1.0      # s
+      fadeOut: 1.5     # s
+
+  intro:
+    engine: ffmpeg                  # ffmpeg | html
+    prependTo: out/intro-demo.mp4   # mp4 final al que se antepone
+    result: out/intro-demo-intro.mp4
+    duration: 2.8
+    title: 'Mi Web App'
+    subtitle: 'datos en lenguaje natural'
+    bg: '#0B0F1A'
+    animation: fade-zoom
+    # logo: assets/logo.png         # opcional: PNG con transparencia
+    # music: audio/bg/4. Ambient Gold.wav   # opcional: música solo en la intro
+
+steps:
+  - caption: 'Pregunta a tus datos en lenguaje natural'
+  - hold: 800
+  - type: { sel: 'demo-chat >>> textarea', text: 'Muéstrame las ventas por región.', cps: 38 }
+  - hold: 300
+  - click: 'demo-chat >>> button.send'
+
+  - caption: 'La respuesta llega en streaming, al instante'
+  - waitFor: 'demo-chat table'
+  - hold: 600
+  - zoomFit: 'demo-chat >>> table'
+  - hold: 2600
+  - resetZoom: true
+  - hold: 400
+
+  - caption: 'Y el dashboard se actualiza en vivo'
+  - click: { sel: 'nav a[href="/dashboard"]', nav: true }
+  - waitFor: '#chart'
+  - hold: 700
+  - zoomFit: { sel: '#chart', fill: 0.9 }
+  - hold: 2600
+  - resetZoom: true
+  - caption: ''
+  - hold: 500

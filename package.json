@@ -1,0 +1,22 @@
+{
+  "name": "demo-recorder",
+  "version": "0.1.0",
+  "description": "Graba vídeos hero/demo deterministas de cualquier web app (Playwright recordVideo + capa de coreografía + ffmpeg).",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "demo-recorder": "bin/demo-recorder.js"
+  },
+  "scripts": {
+    "mock": "node examples/mock-server.mjs",
+    "record": "node scripts/record.mjs",
+    "record:yaml": "node src/run.js examples/demo.yml",
+    "frames": "node scripts/frames.mjs"
+  },
+  "dependencies": {
+    "@andresaya/edge-tts": "^1.8.0",
+    "ffmpeg-static": "^5.2.0",
+    "playwright": "^1.49.0",
+    "yaml": "^2.6.0"
+  }
+}

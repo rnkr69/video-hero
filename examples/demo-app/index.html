@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Acme Analytics — Demo</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(1200px 600px at 70% -10%, #2a2350, #12131a 60%);
+      color: #e8e9f0; min-height: 100vh;
+    }
+    header {
+      display: flex; align-items: center; gap: 20px;
+      padding: 16px 28px; border-bottom: 1px solid #ffffff14;
+      backdrop-filter: blur(6px);
+    }
+    .brand { font-weight: 700; letter-spacing: .3px; display: flex; align-items: center; gap: 10px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #6c5ce7, #00cec9); }
+    nav { margin-left: auto; display: flex; gap: 18px; }
+    nav a { color: #aeb2c2; text-decoration: none; padding: 6px 10px; border-radius: 8px; }
+    nav a:hover { color: #fff; background: #ffffff10; }
+    main { max-width: 760px; margin: 48px auto; padding: 0 24px; }
+    h1 { font-size: 28px; margin: 0 0 6px; }
+    .sub { color: #9aa0b4; margin: 0 0 28px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="dot"></span> Acme Analytics</div>
+    <nav>
+      <a href="/">Chat</a>
+      <a href="/dashboard">Dashboard</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Pregunta a tus datos</h1>
+    <p class="sub">Escribe una pregunta en lenguaje natural y obtén la respuesta al instante.</p>
+    <demo-chat></demo-chat>
+  </main>
+  <script type="module" src="/chat.js"></script>
+</body>
+</html>

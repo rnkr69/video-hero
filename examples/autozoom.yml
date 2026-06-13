@@ -1,0 +1,45 @@
+# Auto-zoom showcase — same flow as demo.yml but using auto-framing instead of
+# hand-tuned zoom scales. `zoomFit` derives the scale from the element's bounding
+# box and centers it (clamped so no empty edges appear).
+#
+#   node examples/mock-server.mjs
+#   node src/run.js examples/autozoom.yml
+
+url: http://127.0.0.1:4317/
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+# Idle-speedup: compress the scripted holds (dead time) to ~4x while keeping action
+# at 1x. Output is a ready-to-share mp4. Tune with idleOpts: { speed, minIdle, floor }.
+encode:
+  idleMp4: out/autozoom-fast.mp4
+  idleOpts: { speed: 4 }
+
+steps:
+  - hold: 800
+  - type: { sel: 'demo-chat >>> textarea', text: 'Muéstrame las ventas por región.', cps: 38 }
+  - hold: 300
+  - click: 'demo-chat >>> button.send'
+  - waitFor: 'demo-chat table'
+  - hold: 400
+
+  # Auto-zoom to the result: no manual scale, framed from the table's bounding box.
+  # NOTE: zoomFit goes through the in-page kit -> use `>>>` to pierce shadow DOM
+  # (unlike waitFor above, which uses a Playwright selector).
+  - zoomFit: 'demo-chat >>> table'
+  - hold: 1800
+  - resetZoom: true
+  - hold: 400
+
+  - click: { sel: 'nav a[href="/dashboard"]', nav: true }
+  - waitFor: '#chart'
+  - hold: 700
+
+  # `fill` controls how much of the viewport the element should occupy (0..1).
+  - zoomFit: { sel: '#chart', fill: 0.9 }
+  - hold: 1500
+  - resetZoom: true
+  - hold: 500

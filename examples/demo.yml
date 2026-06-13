@@ -1,0 +1,42 @@
+# Declarative demo script — same flow as scripts/record.mjs, no JS required.
+# Run the mock server first:  node examples/mock-server.mjs
+# Then:                       node src/run.js examples/demo.yml
+
+url: http://127.0.0.1:4317/
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+# Optional: encode the resulting .webm right after recording.
+# encode:
+#   mp4: out/demo.mp4
+#   gif: out/demo.gif
+
+steps:
+  - hold: 800
+
+  # `>>>` pierces the open shadow root of the <demo-chat> web component.
+  - type: { sel: 'demo-chat >>> textarea', text: 'Muéstrame las ventas por región.', cps: 38 }
+  - hold: 300
+  - click: 'demo-chat >>> button.send'
+
+  # waitFor uses a Playwright selector (pierces open shadow DOM automatically).
+  - waitFor: 'demo-chat table'
+  - hold: 500
+
+  - zoomTo: { sel: 'demo-chat', scale: 1.25 }
+  - hold: 1800
+  - resetZoom: true
+  - hold: 400
+
+  # Full-page navigation link.
+  - click: { sel: 'nav a[href="/dashboard"]', nav: true }
+  - waitFor: '#chart'
+  - hold: 700
+
+  - zoomTo: { sel: '#chart', scale: 1.25 }
+  - hold: 1500
+  - resetZoom: true
+  - hold: 500

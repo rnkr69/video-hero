@@ -1,0 +1,9 @@
+node_modules/
+out/
+.cache/
+*.log
+.DS_Store
+
+# Saved auth sessions (cookies + tokens) — never commit
+auth*.json
+*.auth.json

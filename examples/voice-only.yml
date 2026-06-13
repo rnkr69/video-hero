@@ -1,0 +1,42 @@
+# Vídeo + AUDIO, SIN subtítulos. Los pasos `caption:` siguen ahí: alimentan la VOZ (vía
+# <video>.captions.json) pero NO se queman en pantalla, porque no definimos `captionsMp4`.
+# Esa es la receta del modo "vídeo + audio sin subs".
+#
+#   node examples/mock-server.mjs
+#   node src/run.js examples/voice-only.yml
+
+url: http://127.0.0.1:4317/
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+encode:
+  narrateMp4: out/voice-only.mp4      # solo voz sobre el vídeo limpio (sin captionsMp4)
+  ttsOpts: { voice: es-ES-ElviraNeural }
+
+steps:
+  - caption: 'Pregunta a tus datos en lenguaje natural'
+  - hold: 800
+  - type: { sel: 'demo-chat >>> textarea', text: 'Muéstrame las ventas por región.', cps: 38 }
+  - hold: 300
+  - click: 'demo-chat >>> button.send'
+
+  - caption: 'La respuesta llega en streaming, al instante'
+  - waitFor: 'demo-chat table'
+  - hold: 600
+  - zoomFit: 'demo-chat >>> table'
+  - hold: 2600
+  - resetZoom: true
+  - hold: 400
+
+  - caption: 'Y el dashboard se actualiza en vivo'
+  - click: { sel: 'nav a[href="/dashboard"]', nav: true }
+  - waitFor: '#chart'
+  - hold: 700
+  - zoomFit: { sel: '#chart', fill: 0.9 }
+  - hold: 2600
+  - resetZoom: true
+  - caption: ''
+  - hold: 500

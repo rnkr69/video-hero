@@ -1,0 +1,42 @@
+# Captions/SRT showcase. Captions are timeline events: each `caption` shows from that
+# point until the next `caption` (an empty one clears it). The recorder records their
+# times; encode writes an .srt and burns it with libass.
+#
+#   node examples/mock-server.mjs
+#   node src/run.js examples/captions.yml
+
+url: http://127.0.0.1:4317/
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+encode:
+  srt: out/captions.srt              # also write the standalone subtitle file
+  captionsMp4: out/captions.mp4      # burn the captions into an mp4
+
+steps:
+  - caption: 'Pregunta en lenguaje natural'
+  - hold: 800
+  - type: { sel: 'demo-chat >>> textarea', text: 'Muéstrame las ventas por región.', cps: 38 }
+  - hold: 300
+  - click: 'demo-chat >>> button.send'
+
+  - caption: 'Respuesta en streaming, al instante'
+  - waitFor: 'demo-chat table'
+  - hold: 500
+  - zoomFit: 'demo-chat >>> table'
+  - hold: 1800
+  - resetZoom: true
+  - hold: 400
+
+  - caption: 'Y el dashboard en vivo'
+  - click: { sel: 'nav a[href="/dashboard"]', nav: true }
+  - waitFor: '#chart'
+  - hold: 700
+  - zoomFit: { sel: '#chart', fill: 0.9 }
+  - hold: 1500
+  - resetZoom: true
+  - caption: ''                      # clear before the end
+  - hold: 500
