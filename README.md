@@ -234,14 +234,27 @@ natural language from *any* project — "record a demo video of this app", "add 
 an intro with a logo", "nicer subtitles with stroke and fades". The skill knows the efficient loop
 (`probe → record → frames → adjust → encode once`) and writes/adjusts the `.yml` for you.
 
-The skill is **global**, not per-project — it lives in your user skills directory, not in this repo
-(a project-local copy was intentionally removed to avoid a duplicate skill name):
+The skill ships in this repo at [`skills/demo-video-hero/SKILL.md`](skills/demo-video-hero/SKILL.md).
+It is meant to be installed **globally** (in your user skills directory), not per-project, so it's
+available in every Claude Code session — copy it to:
 
 ```
 ~/.claude/skills/demo-video-hero/SKILL.md
 ```
 
-On Windows that resolves to `C:\Users\<you>\.claude\skills\demo-video-hero\SKILL.md`.
+Install it once (run from this repo's root):
+
+```powershell
+# Windows (PowerShell)
+New-Item -ItemType Directory -Force "$HOME\.claude\skills\demo-video-hero" | Out-Null
+Copy-Item skills\demo-video-hero\SKILL.md "$HOME\.claude\skills\demo-video-hero\SKILL.md"
+```
+
+```bash
+# macOS / Linux
+mkdir -p ~/.claude/skills/demo-video-hero
+cp skills/demo-video-hero/SKILL.md ~/.claude/skills/demo-video-hero/SKILL.md
+```
 
 **How it fits together:** the engine (this project) is installed once as the global `demo-recorder`
 CLI via `npm link`; the skill is installed once in `~/.claude/skills/`. From then on, in any
@@ -249,8 +262,8 @@ project's Claude Code session, you can ask for a demo video — the agent writes
 project (it knows the app's URLs, selectors, and login) and the global CLI runs the engine. One
 install of each serves every project.
 
-To (re)install the skill, place a `SKILL.md` at the path above. If the `demo-recorder` command isn't
-found in a session, re-run `npm link` in this repo to register the CLI globally.
+> Don't keep a second copy under a project's own `.claude/skills/` — two skills with the same `name`
+> collide. If the `demo-recorder` command isn't found in a session, re-run `npm link` in this repo.
 
 ## Text-to-speech providers
 
@@ -307,6 +320,11 @@ The in-depth guides under `docs/` are written in Spanish:
 
 Runnable examples live in `examples/` — one `.yml` per feature (`autozoom`, `captions`, `narrate`,
 `intro-music`, `styled-subs`, `voice-only`, `real-app`), all playable against the bundled mock app.
+
+## Credits
+
+The bundled background-music tracks in `audio/bg/` come from
+[StreamBeats](https://streambeats.com/) — royalty-free music, free to use.
 
 ## License
 

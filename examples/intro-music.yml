@@ -41,7 +41,7 @@ encode:
     bg: '#0B0F1A'
     animation: fade-zoom
     # logo: assets/logo.png         # opcional: PNG con transparencia
-    # music: audio/bg/4. Ambient Gold.wav   # opcional: música solo en la intro
+    # music: audio/bg/4.-Ambient-Gold.mp3   # opcional: música solo en la intro
 
 steps:
   - caption: 'Pregunta a tus datos en lenguaje natural'

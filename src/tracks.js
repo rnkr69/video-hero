@@ -14,7 +14,7 @@ const isAudio = (f) => /\.(wav|mp3|m4a|aac|ogg|flac)$/i.test(f);
 const slug = (s) => String(s).toLowerCase().replace(/\.[^.]+$/, '')
   .replace(/^\s*\d+\s*[.\-_)]*\s*/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
-// Bundled tracks as { file, slug } (e.g. { file: '4. Ambient Gold.wav', slug: 'ambient-gold' }).
+// Bundled tracks as { file, slug } (e.g. { file: '4.-Ambient-Gold.mp3', slug: 'ambient-gold' }).
 export function bundledTracks() {
   try { return readdirSync(bgDir()).filter(isAudio).map((file) => ({ file, slug: slug(file) })); }
   catch { return []; }

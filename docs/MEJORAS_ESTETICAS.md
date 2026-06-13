@@ -94,7 +94,7 @@ encode:
     bg: '#0B0F1A'           # color de fondo
     fg: '#FFFFFF'           # color de texto (solo motor html)
     animation: fade-zoom    # fade | fade-zoom
-    music: audio/bg/4. Ambient Gold.wav   # opcional: música solo en la intro
+    music: audio/bg/4.-Ambient-Gold.mp3   # opcional: música solo en la intro
 ```
 
 - **`engine: ffmpeg`** (por defecto): compone fondo + logo + título + subtítulo con `drawtext`,
