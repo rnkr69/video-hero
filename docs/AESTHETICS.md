@@ -105,11 +105,11 @@ encode:
     music: audio/bg/4.-Ambient-Gold.mp3   # optional: music in the intro only
 ```
 
-- **`engine: ffmpeg`** (default): composites background + logo + title + subtitle with `drawtext`,
+- **`engine: ffmpeg`** (default): composites background + logo + title + subtitle with **libass**,
   fade-in/out and a subtle zoom. Deterministic and fast, no browser. Built at the exact size of
   the target video. The typeface is bundled **Inter** (cross-platform); override it with
-  `font` (subtitle/regular) and `fontBold` (title) — a path, a bundled name, or an alias. Both
-  must live in the same directory (the engine passes only the basename to the ffmpeg filter).
+  `font` (subtitle/regular) and `fontBold` (title) — a path, a bundled name, or an alias (each font
+  is copied next to the `.ass` before rendering, so they can live in any path).
 - **`engine: html`**: renders `assets/intro.html` (richer CSS animations) and records it with
   the same Playwright engine. Customize that template for your brand.
 - The concatenation re-encodes (robust across different encoders) and keeps audio only if
