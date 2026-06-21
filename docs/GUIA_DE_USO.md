@@ -22,8 +22,8 @@ Windows (PowerShell). El flujo de trabajo es siempre el mismo bucle:
 
 ## 1. Requisitos (una vez)
 
-```powershell
-cd C:\wamp64_337\www\video_hero
+```bash
+cd /ruta/a/video_hero   # la carpeta donde clonaste este repo
 npm install
 npm link        # registra el comando global `demo-recorder` (para usarlo desde otros proyectos)
 # El navegador de Chromium ya está cacheado. Si falla por revisión:
