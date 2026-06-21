@@ -106,6 +106,9 @@ const matchUrl = (pattern, url) => {
   return re.test(url);
 };
 
+// Pure glob matcher exposed ONLY for unit tests (not part of the public API).
+export const __test = { matchUrl };
+
 // Selective interception: pin ONLY the non-deterministic requests, pass the rest to the
 // real backend. Rules are tried in order; first match wins. Each rule has a `url`
 // (glob/substring) and one action:

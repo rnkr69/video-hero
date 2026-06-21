@@ -649,3 +649,6 @@ export async function burnSubs(input, output, { captions, srt, style } = {}) {
   for (const c of copied) { try { rmSync(c, { force: true }); } catch { /* font copy is disposable */ } }
   return outAbs;
 }
+
+// Pure, ffmpeg-free internals exposed ONLY for unit tests (not part of the public API).
+export const __test = { toCues, hexToAss, srtTime, assTime, buildVolumeExpr, familyOf };

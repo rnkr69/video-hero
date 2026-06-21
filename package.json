@@ -33,7 +33,11 @@
     "mock": "node examples/mock-server.mjs",
     "record": "node scripts/record.mjs",
     "record:yaml": "node src/run.js examples/demo.yml",
-    "frames": "node scripts/frames.mjs"
+    "frames": "node scripts/frames.mjs",
+    "test": "node --test \"test/unit/*.test.js\"",
+    "test:watch": "node --test --watch \"test/unit/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage \"test/unit/*.test.js\"",
+    "test:smoke": "node --test \"test/smoke/*.smoke.js\""
   },
   "dependencies": {
     "@andresaya/edge-tts": "^1.8.0",

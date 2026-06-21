@@ -123,4 +123,10 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('demo-recorder:', e.message); process.exit(1); });
+// Pure flag parser + help text exposed ONLY for unit tests (not part of the public API).
+export const __test = { parse, HELP };
+
+// CLI guard: only run when invoked directly (not when imported by a test).
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((e) => { console.error('demo-recorder:', e.message); process.exit(1); });
+}

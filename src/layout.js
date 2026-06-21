@@ -87,3 +87,6 @@ export function cleanOut(out = 'out', { all = false, keep = 3 } = {}) {
   });
   return { removed };
 }
+
+// Pure predicate exposed ONLY for unit tests (not part of the public API).
+export const __test = { isJunk };

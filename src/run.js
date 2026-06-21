@@ -366,6 +366,9 @@ export async function probeScript(file, { from, to } = {}) {
   return ok;
 }
 
+// Pure helpers exposed ONLY for unit tests (not part of the public API).
+export const __test = { subEnv, sliceSteps, norm, sessionOpts, preflight };
+
 // CLI guard: `node src/run.js <guion.yml>` still works standalone.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const file = process.argv[2];
