@@ -53,8 +53,8 @@ re-recording after a UI tweak is a one-command operation rather than a fresh man
 
 ## Installation
 
-```powershell
-cd C:\XXX\video_hero
+```bash
+cd /path/to/video_hero   # the folder where you cloned this repo
 npm install
 npm link          # registers the global `demo-recorder` command (use it from any project)
 
