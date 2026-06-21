@@ -33,9 +33,21 @@ test('a negative net delay is clamped to 0', () => {
 test('per-kind override: a name string, a {name,gain} object, or null to mute', () => {
   const cues = mapSfx(evs, { map: { click: 'pop', zoom: { name: 'swoosh', gain: 0.5 }, nav: null } });
   assert.deepEqual(cues.map((c) => [c.kind, c.name, c.gain]), [
-    ['click', 'pop', 1],
+    ['click', 'pop', 0.45],   // default conservative gain
     ['zoom', 'swoosh', 0.5],
   ]);
+});
+
+test('zoomOut is muted by default (one whoosh per zoom gesture, on the zoom-in)', () => {
+  const cues = mapSfx([{ t: 1, kind: 'zoom' }, { t: 3, kind: 'zoomOut' }]);
+  assert.deepEqual(cues.map((c) => c.kind), ['zoom']);
+});
+
+test('cooldown drops a same-sound cue that lands within minGap', () => {
+  // two clicks 0.2s apart → the second is skipped (same sound still playing).
+  const cues = mapSfx([{ t: 1.0, kind: 'click' }, { t: 1.2, kind: 'click' }, { t: 2.0, kind: 'click' }],
+    { minGap: 0.3 });
+  assert.deepEqual(cues.map((c) => c.delay), [1.0, 2.0]);
 });
 
 test('global gain applies when no per-entry gain is set', () => {
@@ -45,7 +57,7 @@ test('global gain applies when no per-entry gain is set', () => {
 
 test('a literal sfx event carries its own name through', () => {
   const cues = mapSfx([{ t: 1, kind: 'sfx', name: 'boom' }]);
-  assert.deepEqual(cues, [{ name: 'boom', delay: 1, gain: 1, kind: 'sfx' }]);
+  assert.deepEqual(cues, [{ name: 'boom', delay: 1, gain: 0.45, kind: 'sfx' }]);
 });
 
 test('only[] restricts the cues to a kind whitelist', () => {

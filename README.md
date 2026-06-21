@@ -8,7 +8,9 @@ Record **deterministic** hero/demo videos of any web app — smooth, repeatable,
 ## Demo
 
 > The video below was recorded **by demo-recorder itself** — the landing page in
-> [`presentation/`](presentation/) scripted by [`hero.yml`](hero.yml). 🎬
+> [`presentation/`](presentation/) scripted by [`hero.yml`](hero.yml). One continuous take showing
+> the effect toolset: a match-cut intro (mesh + typewriter), spotlight, on-screen keycaps, callouts,
+> a highlight sweep, karaoke captions, chapter lower-thirds, ducked music, SFX and an outro card. 🎬
 
 https://github.com/user-attachments/assets/fd43a9ea-c4ba-47b0-9689-1df256cf58b1
 
@@ -22,10 +24,10 @@ Deterministic source (your app, with optional mocked endpoints)
         │
         ▼
 Playwright recordVideo  ── captures REAL pixels (streaming, canvas, shadow DOM, everything)
-        │   + an injected layer: animated cursor (easing) · char-by-char typing
-        │     · click pulse · Screen-Studio-style camera auto-zoom (CSS transform)
+        │   + an injected layer: animated cursor (easing) · char-by-char typing · click pulse/ripple
+        │     · Screen-Studio auto-zoom · spotlight · keycaps · callouts · highlight sweep
         ▼
-   .webm  ──(ffmpeg)──▶  .mp4 / .gif   + voiceover · subtitles · background music
+   .webm  ──(ffmpeg)──▶  .mp4 / .gif (+ 9:16/1:1) + voice · subtitles/karaoke · music · intro/outro
 ```
 
 You describe the demo once in a small YAML script. The tool plays it back identically every time, so
@@ -35,13 +37,20 @@ re-recording after a UI tweak is a one-command operation rather than a fresh man
 
 - **Deterministic** — same script, same video, every run.
 - **Real pixels** — Playwright captures whatever the browser renders: video, canvas, web components.
-- **Polished motion** — synthetic cursor with easing, realistic typing, click pulses, cinematic
-  auto-zoom that frames the element you're interacting with.
-- **Full post-production** — burned-in subtitles, AI voiceover, ducked background music, an intro
-  card, idle-speedup (compresses dead time), and mp4/gif export — all driven from the same script.
+- **Cinematic in-page effects** — synthetic eased cursor, realistic typing, click pulses/ripples,
+  Screen-Studio auto-zoom, **spotlight**, on-screen **keycaps**, **callouts**, and a **highlight
+  sweep** — all drawn live during the recording.
+- **Full post-production** — AI voiceover, clean or **karaoke** subtitles, ducked music, animated
+  **intro templates** with **match-cut**, an **outro** card, **lower-thirds**, **watermark**,
+  step-synced **SFX**, idle-speedup and **speed ramps**, a subtle **colour grade**, plus mp4/gif —
+  all from the same script.
+- **Multi-format for social** — export **9:16 / 1:1** cuts (with an action-following **smart-crop**)
+  from the same recording.
 - **No API keys required** — voice uses free `edge-tts`; ffmpeg ships via `ffmpeg-static`.
 - **Drive it from any project** — install once, then record demos of *other* apps from their own
   folders.
+
+See [`docs/AESTHETICS.md`](docs/AESTHETICS.md) for the full effect catalogue and recipes.
 
 ## Requirements
 
@@ -157,12 +166,18 @@ steps:
 |------|---------|
 | `goto` | Navigate to a URL |
 | `hold` | Pause (ms). Recorded as idle so `idle-speedup` can compress it later |
-| `move` | Move the cursor to an element |
+| `move` | Move the cursor to an element (`overshoot`, `trail` for personality) |
 | `type` | Type text char-by-char into an input/textarea (`cps` = chars/sec) |
-| `click` | Move + pulse + click. `nav: true` waits for navigation; `zoom` auto-frames after the click |
+| `click` | Move + pulse + click. `nav: true` waits for navigation; `zoom` auto-frames; `variant: double\|right`, `ripple`, `pop` |
 | `zoomTo` | Zoom to a fixed scale centered on an element |
-| `zoomFit` | Auto-zoom that frames an element's bounding box (Screen-Studio style) |
-| `resetZoom` | Return the camera to 1× |
+| `zoomFit` | Auto-zoom that frames an element's bounding box (Screen-Studio style); `spotlight: true` dims the rest |
+| `resetZoom` | Return the camera to 1× (also clears spotlight/callouts) |
+| `spotlight` / `spotlightOff` | Dim everything but one element (attention mask) |
+| `keycap` (alias `key`) | Show pressed keys as on-screen capsules (e.g. `cmd+k` → ⌘ + K) |
+| `annotate` / `annotateOff` | Callout anchored to an element (`shape: arrow\|box\|circle`, `text`, `side`) |
+| `highlight` | Animated marker/underline sweep over an element |
+| `scroll` | Smooth eased scroll to an element |
+| `chapter` | Name the current section → animated lower-third at encode time |
 | `caption` | Set the on-screen caption from now on (drives subtitles **and** voiceover) |
 | `waitFor` | Wait for a Playwright selector / function |
 
@@ -182,20 +197,31 @@ Add an `encode:` block to produce the final assets. Anything you omit is skipped
 encode:
   mp4: out/demo.mp4
   gif: out/demo.gif
-  srt: out/demo.srt           # subtitle sidecar from your caption: steps
-  captionsMp4: out/demo-cc.mp4 # burn styled subtitles into the video
+  srt: out/demo.srt            # subtitle sidecar from your caption: steps
+  captionsMp4: out/demo-cc.mp4 # burn subtitles ({ karaoke: true } for word-by-word)
   narrateMp4: out/demo-vo.mp4  # AI voiceover synthesized from caption: steps
   idleMp4: out/demo-fast.mp4   # speed up the held "dead time"
+  rampsMp4: out/demo-ramps.mp4 # deliberate speed ramps (slow-mo key beats)
   music: true                  # ducked background-music bed (or { track: ambient-gold, ... })
-  intro:                       # optional intro card prepended to the demo
+  sfx: { gain: 0.8 }           # step-synced SFX (bundled click/whoosh/key/chime)
+  intro:                       # animated intro card prepended to the demo
+    engine: html               # template: minimal|bold|terminal|mesh, typewriter, matchCut, sting
     title: My Product
     subtitle: A quick tour
-    logo: ./logo.png
+  outro: { title: Try it, cta: Get started, url: github.com/me/app }
+  lowerThirds: true            # chapter: steps → animated lower-thirds
+  watermark: { text: My Brand, pos: br }
+  transitions: { at: [nav, chapter], transition: zoomin }
+  progressBar: { color: '#6C5CE7' }
+  grade: { vignette: true }
+  reframe: { ratios: ['9:16', '1:1'], follow: true }   # social cuts (smart-crop)
 ```
 
 Captions come from `caption:` steps in your script: the same text drives both the burned-in
 subtitles and the voiceover. Voice synthesis is **cached** under `.cache/tts/` (keyed by content), so
-re-rendering is offline, free, and deterministic — generate once.
+re-rendering is offline, free, and deterministic — generate once. The full effect catalogue — with
+recipes and every option — lives in [`docs/AESTHETICS.md`](docs/AESTHETICS.md); one example `.yml`
+per feature sits in [`examples/`](examples/).
 
 ## Recording a real app
 

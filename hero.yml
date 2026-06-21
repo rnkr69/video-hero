@@ -1,8 +1,14 @@
-# Hero/presentation video for demo-recorder ITSELF (meta!). Records the self-contained
-# landing page in presentation/index.html with a scripted camera tour.
-#   demo-recorder probe  hero.yml
-#   demo-recorder record hero.yml
-#   demo-recorder encode hero.yml     (or: demo-recorder run hero.yml)
+# Hero/presentation video for demo-recorder ITSELF (meta!). Records the self-contained landing page
+# in presentation/index.html with a scripted camera tour that SHOWS OFF the effect toolset:
+# match-cut intro (mesh + typewriter + sting), chapter lower-thirds, spotlight, keycaps, callouts,
+# highlight sweep, click ripple/pop, karaoke captions, watermark, progress bar, colour grade, SFX,
+# music with ducking, and an outro end-card. One continuous music bed over intro+demo+outro.
+#
+#   demo-recorder probe  hero.yml      # validate selectors (headed)
+#   demo-recorder record hero.yml      # record only (fast iteration)
+#   demo-recorder run    hero.yml      # record + encode → out/hero-final.mp4
+#
+# SFX use the bundled audio/sfx/ (click/whoosh/key/chime). Final stays well under GitHub's 20 MB.
 
 url: file:///C:/wamp64_337/www/video_hero/presentation/index.html
 width: 1280
@@ -12,46 +18,60 @@ headless: true
 out: out
 
 steps:
-  # 1 — hero title (cinematic push-in)
+  # 1 — hero title: highlight sweep + spotlighted push-in
+  - chapter: '1. Script it once'
   - caption: 'Deterministic demo videos of any web app.'
-  - hold: 2400
-  - zoomFit: { sel: '#hero-title', scale: 1.5 }
+  - hold: 700
+  - highlight: { sel: '#hero-title', color: 'rgba(54,211,196,.32)' }
+  - hold: 500
+  - zoomFit: { sel: '#hero-title', scale: 1.4, spotlight: true }
   - hold: 2000
   - resetZoom: true
   - hold: 300
 
-  # 2 — write the script, run it
+  # 2 — run it: type the command, keycap, callout arrow, click (ripple+pop), spotlight the output
+  - chapter: '2. Run it'
   - caption: 'You script the demo once in a small YAML file.'
-  - zoomFit: { sel: '#terminal', fill: 0.95 }
+  - zoomFit: { sel: '#terminal', fill: 0.96 }
   - hold: 700
-  - type: { sel: '#cmd', text: 'demo-recorder run demo.yml', cps: 20 }
-  - hold: 1600
+  - type: { sel: '#cmd', text: 'demo-recorder run demo.yml', cps: 22 }
+  - keycap: 'enter'
   - caption: 'Then just run it — probe, record, encode.'
-  - click: '#run'
+  - annotate: { sel: '#run', shape: arrow, side: top, text: 'One command' }
+  - hold: 800
+  - click: { sel: '#run', ripple: true, pop: true, zoom: false }
+  - annotateOff: true
   - waitFor: '#term-done'
-  - hold: 2400
+  - hold: 600
+  - spotlight: { sel: '#term-out', dim: 0.5 }
+  - hold: 1500
   - resetZoom: true
   - hold: 300
 
   # 3 — the pipeline
+  - chapter: '3. Real pixels in, MP4 out'
   - caption: 'Real pixels in, a polished MP4 out.'
   - zoomFit: { sel: '#pipeline', fill: 0.98 }
-  - hold: 2800
+  - hold: 2600
   - resetZoom: true
   - hold: 300
 
-  # 4 — features (full frame: all four cards readable while narrating)
-  - caption: 'Voice, subtitles, music and zoom — all built in.'
-  - hold: 4800
+  # 4 — features: box callout on one card while narrating
+  - chapter: '4. All built in'
+  - caption: 'Voice, subtitles, music and cinematic effects — all built in.'
+  - annotate: { sel: '#f2', shape: box, text: 'Spotlight · keycaps · callouts', color: '#36d3c4' }
+  - hold: 1700
+  - annotateOff: true
+  - hold: 3800
 
-  # 5 — outro (final beauty shot)
+  # 5 — wrap (the outro card is appended after this)
   - caption: 'demo-recorder — free and open source.'
-  - hold: 3600
+  - hold: 3500
   - caption: ''
   - hold: 400
 
 encode:
-  captionsMp4: out/work/hero-cc.mp4      # intermediate (burned subs) → out/work/
+  captionsMp4: out/work/hero-cc.mp4      # intermediate (burned karaoke subs) → out/work/
   narrateMp4: out/hero.mp4               # voice over the captioned video; music laid on top
   ttsOpts:
     voice: en-US-AriaNeural              # clear English voice (edge-tts, free)
@@ -59,13 +79,34 @@ encode:
       track: ambient-gold
       full: 0.7
       duck: 0.14
+  captionsOpts:
+    karaoke: true                        # word-by-word fill synced to the voice
+    style: { fillColor: '#36d3c4', color: '#FFFFFF', fontSize: 24 }
   mp4opts: { fps: 30 }
+
   intro:
-    engine: ffmpeg
-    prependTo: out/hero.mp4
-    result: out/hero-intro.mp4           # FINAL (intro + demo + continuous music)
-    duration: 2.6
+    engine: html
+    template: mesh                       # animated mesh-gradient backdrop
+    typewriter: true                     # type the title out
     title: 'demo-recorder'
     subtitle: 'deterministic demo videos of any web app'
-    bg: '#0B0F1A'
-    animation: fade-zoom
+    accent: '#6C5CE7'
+    duration: 2.6
+    matchCut: true                       # dissolve/zoom intro → demo (no hard cut)
+    sting: chime                         # a one-shot at the very start
+    result: out/hero-final.mp4           # FINAL (intro + demo + outro + continuous music)
+
+  outro:
+    engine: html
+    title: 'Free & open source'
+    subtitle: 'Script your demo once, render it forever'
+    cta: 'Get started'
+    url: 'github.com/rnkr69/video-hero'
+    accent: '#6C5CE7'
+    duration: 3.0
+
+  lowerThirds: { hold: 2.6, accent: '#6C5CE7' }   # chapter titles
+  watermark: { text: 'demo-recorder', pos: br, opacity: 0.4 }
+  progressBar: { color: '#6C5CE7', height: 5 }
+  grade: { vignette: true, saturation: 1.06, contrast: 1.03 }
+  sfx: true                              # bundled click/whoosh/key/chime (conservative default gain)

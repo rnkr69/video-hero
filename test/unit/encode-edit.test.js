@@ -1,7 +1,7 @@
 // Pure editing helpers: idle/ramp speed plans, piecewise expressions, karaoke ASS. No ffmpeg.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { idleSegments, buildSpeedPlan, piecewiseExpr, buildKaraokeAss } from '../../src/encode.js';
+import { idleSegments, buildSpeedPlan, piecewiseExpr, buildKaraokeAss, buildProgressBarAss } from '../../src/encode.js';
 
 test('idleSegments interleaves active 1x with sped idle spans', () => {
   const segs = idleSegments([[2, 5]], 10, { speed: 4, minIdle: 0.7, floor: 0.5 });
@@ -64,4 +64,14 @@ test('buildKaraokeAss emits per-word \\kf with length-weighted timing', () => {
 test('buildKaraokeAss skips captions with no text or zero duration', () => {
   assert.equal(buildKaraokeAss([{ t: 1, text: '', duration: 1 }]).includes('Dialogue:'), false);
   assert.equal(buildKaraokeAss([{ t: 1, text: 'x', duration: 0 }]).includes('Dialogue:'), false);
+});
+
+test('buildProgressBarAss grows the bar width across discrete steps (libass, not drawbox)', () => {
+  const ass = buildProgressBarAss(10, { w: 1000, h: 500 }, { steps: 10, height: 5, pos: 'bottom', color: '#6C5CE7' });
+  const d = ass.split('\n').filter((l) => l.startsWith('Dialogue:'));
+  assert.equal(d.length, 10);
+  assert.match(d[0], /\\pos\(0,495\)/);     // bottom: H - height
+  assert.match(d[0], /\\1c&HE75C6C&/);      // #6C5CE7 → BGR
+  assert.match(d[0], /l 100 0/);            // first slice ≈ 10% of 1000
+  assert.match(d[9], /l 1000 0/);           // last slice = full width
 });

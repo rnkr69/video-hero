@@ -239,11 +239,13 @@ encode:
 que los SFX funcionan de fábrica; sobrescríbelos con los tuyos (mismos nombres) o apunta `dir` a tu
 propia carpeta. La resolución funciona como las pistas de música (nombre exacto, alias/slug o ruta) y
 los SFX son **opcionales** — si un nombre no resuelve, ese efecto se salta (el render nunca falla por
-un SFX que falta). Mapa por defecto `kind → name`: `click`/`nav` → `click`,
-`zoom`/`zoomOut` → `whoosh`, `keycap` → `key`, `success` → `chime`;
-`type`/`move`/`scroll`/`spotlight` van silenciados (el spotlight acompaña a un `zoomFit`, que ya
-suena — mapéalo explícitamente si usas spotlights sueltos). El set incluido ya cubre todos los kinds
-por defecto. Ver `audio/sfx/README.md`.
+un SFX que falta). Mapa por defecto `kind → name`: `click`/`nav` → `click`, `zoom` → `whoosh`,
+`keycap` → `key`, `success` → `chime`; `type`/`move`/`scroll`/`spotlight`/`zoomOut` van silenciados —
+así un gesto hace un solo sonido (el zoom-**in** suena, el reset no; el spotlight acompaña a su
+`zoomFit`). Mapea cualquiera explícitamente para activarlo. Los SFX suenan a un **gain conservador
+por defecto** (los clips incluidos son fuertes); súbelo con `sfx.gain`. Además, un cooldown por
+sonido descarta una cue si ese mismo sonido sigue sonando, para que nada se oiga doble. El set
+incluido cubre todos los kinds por defecto. Ver `audio/sfx/README.md`.
 
 ---
 

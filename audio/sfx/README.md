@@ -12,13 +12,15 @@ ruta. Los SFX son **opcionales** — si un nombre no se resuelve, ese efecto sim
 | evento (`kind`) | SFX por defecto |
 |---|---|
 | `click`, `nav`   | `click` |
-| `zoom`, `zoomOut` | `whoosh` |
+| `zoom`            | `whoosh` |
 | `keycap`         | `key` |
 | `success`        | `chime` |
-| `type`, `move`, `scroll`, `spotlight` | (silenciados) |
+| `type`, `move`, `scroll`, `spotlight`, `zoomOut` | (silenciados) |
 
-> `spotlight` va silenciado porque casi siempre acompaña a un `zoomFit` (que ya suena con `whoosh`);
-> si usas spotlights sueltos, mapéalo: `map: { spotlight: whoosh }`.
+> `zoomOut` y `spotlight` van silenciados para que **un gesto suene una vez**: el zoom-*in* ya hace
+> `whoosh` (un segundo en el reset se oiría doble), y el spotlight acompaña a su `zoomFit`. Mapéalos
+> si los quieres: `map: { zoomOut: whoosh }`. Los SFX suenan a un **gain conservador por defecto**
+> (los clips son fuertes); súbelo con `sfx.gain`. Un cooldown por sonido evita dobles.
 
 Así que basta con dejar aquí `click.wav`, `whoosh.wav`, `key.wav`, `chime.wav` (o alias que
 contengan esas palabras) para tener SFX. Sobrescribe el mapa desde el `.yml`:

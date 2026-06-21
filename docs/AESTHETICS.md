@@ -234,11 +234,12 @@ encode:
 so SFX work out of the box; override them with your own files of the same name, or point `dir` at your
 own folder. Resolution works like the music tracks (exact name, alias/slug, or path) and SFX are
 **optional** — if a name doesn't resolve, that effect is skipped (the render never fails for a missing
-SFX). Default `kind → name` map: `click`/`nav` → `click`,
-`zoom`/`zoomOut` → `whoosh`, `keycap` → `key`, `success` → `chime`;
-`type`/`move`/`scroll`/`spotlight` are muted (spotlight rides along with a `zoomFit`, which already
-whooshes — map it explicitly if you use standalone spotlights). The bundled set already covers every
-default kind. See `audio/sfx/README.md`.
+SFX). Default `kind → name` map: `click`/`nav` → `click`, `zoom` → `whoosh`, `keycap` → `key`,
+`success` → `chime`; `type`/`move`/`scroll`/`spotlight`/`zoomOut` are muted — so one gesture makes
+one sound (the zoom-**in** whooshes, the reset doesn't; the spotlight rides along with its `zoomFit`).
+Map any of them explicitly to un-mute. SFX play at a **conservative default gain** (the bundled clips
+are loud); raise it with `sfx.gain`. A per-sound cooldown also drops a cue when the same sound is
+still playing, so nothing double-hits. The bundled set covers every default kind. See `audio/sfx/README.md`.
 
 ---
 
