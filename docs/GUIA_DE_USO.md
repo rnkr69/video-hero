@@ -126,6 +126,44 @@ steps:
 - En `waitFor` (va por Playwright) usa **CSS normal**; Playwright atraviesa shadow roots
   abiertos solo. Ej: `mi-widget table`.
 
+### Pasos de efectos (coreografía)
+
+Encima de lo básico hay **pasos de efectos in-page**, dibujados en vivo durante la grabación (así
+salen en el contact-sheet — sin necesidad de encodear). Usan la misma sintaxis de selector `>>>`. El
+porqué estético de cada uno está en **[docs/MEJORAS_ESTETICAS.md](MEJORAS_ESTETICAS.md)**.
+
+```yaml
+steps:
+  # Máscara de atención (spotlight estilo Screen Studio): atenúa todo menos el elemento.
+  - spotlight: { sel: '#chart', dim: 0.6 }       # suelto
+  - zoomFit:   { sel: '#chart', spotlight: true } # …o acoplado a un auto-zoom
+  - spotlightOff: true                            # (resetZoom también la quita)
+
+  # Keycaps en pantalla (atajos): 'cmd+k' → cápsulas ⌘ + K.
+  - keycap: 'cmd+k'                               # alias: `key`
+
+  # Callouts / anotaciones ancladas a un elemento (lo siguen bajo el zoom).
+  - annotate: { sel: '#send', shape: arrow, side: left, text: 'Click aquí', color: '#FFCC00' }
+  - annotate: { sel: '#row',  shape: box,    text: 'Resultado' }   # box | circle | arrow
+  - annotateOff: true                             # (resetZoom también quita callouts + resaltados)
+
+  # Barrido de resaltado animado (marcador / subrayado).
+  - highlight: { sel: 'h1', mode: marker, color: 'rgba(255,214,0,.40)' }
+
+  # Scroll suave con easing (en vez de un salto brusco).
+  - scroll: { sel: '#section', ms: 700 }
+
+  # Variantes de click + pop de atención + anillo de ripple.
+  - click: { sel: '#row', variant: double }       # single (def) | double | right
+  - click: { sel: '#kpi', ripple: true, pop: true }
+
+  # Personalidad del cursor: un pequeño rebote al llegar + un trail que se desvanece.
+  - move: { sel: '#cta', overshoot: true, trail: true }
+
+  # Nombra la sección actual → se renderiza como lower-third animado al encodear.
+  - chapter: '1. Pregunta en lenguaje natural'
+```
+
 ---
 
 ## 4. Grabar tu web real, paso a paso
@@ -266,9 +304,9 @@ Claves:
 - **No combines** subtítulos/voz con `idleMp4`: el acelerado cambia la línea de tiempo y
   desincroniza. Saca por un lado el vídeo con voz/subtítulos y por otro el acelerado.
 
-### Mejoras estéticas (subs con trazo, intro, música)
+### Mejoras estéticas (subs, intro, música, SFX, reencuadre, outro…)
 
-Cuatro extras se documentan en detalle en **[docs/MEJORAS_ESTETICAS.md](MEJORAS_ESTETICAS.md)**:
+Todo esto se documenta en detalle en **[docs/MEJORAS_ESTETICAS.md](MEJORAS_ESTETICAS.md)**:
 
 - **Elegir pistas** — las 4 combinaciones (solo vídeo / +audio / +subs / +ambos). Para
   **audio sin subs**, usa `narrateMp4` sin `captionsMp4` (ejemplo `examples/voice-only.yml`).
@@ -282,6 +320,19 @@ Cuatro extras se documentan en detalle en **[docs/MEJORAS_ESTETICAS.md](MEJORAS_
 - **Música de fondo con ducking** — `ttsOpts.music` baja la música antes del primer TTS, la
   sube en huecos largos y la devuelve al final. **3 pistas incluidas** (alias `ambient-gold`,
   `sidewalk-chalk`, `she-said-i-wonder`; `demo-recorder tracks`) o tu propio audio. Ejemplo `examples/intro-music.yml`.
+- **Plantillas de intro + match-cut** — `intro.template` (`minimal`/`bold`/`terminal`/`mesh`),
+  `intro.typewriter`, e `intro.matchCut` (o `encode.transition`) para disolver/zoom intro→demo
+  en vez de un corte seco. Ejemplo `examples/match-cut.yml`.
+- **Outro de cierre** — `encode.outro` (espejo de la intro: tarjeta animada con CTA/URL/logo);
+  intro+demo+outro comparten una misma cama musical continua. Ejemplo `examples/outro.yml`.
+- **SFX sincronizados con los pasos** — `encode.sfx` reproduce efectos de sonido cortos sobre los
+  beats grabados (clicks, zooms, keycaps) desde el sidecar `<video>.events.json`, mezclados sobre el
+  audio ya con ducking. Tú aportas el audio en `audio/sfx/`. Ejemplo `examples/sfx.yml`.
+- **Reencuadre multi-formato** — `encode.reframe: ['9:16','1:1']` exporta relaciones de aspecto
+  extra con relleno difuminado (para redes) desde la misma grabación. Ejemplo `examples/sfx.yml`.
+- **Lower-thirds + watermark** — `encode.lowerThirds` convierte los pasos `chapter:` en una tira de
+  capítulos animada; `encode.watermark` añade una marca de agua en la esquina (texto o logo). Ejemplo
+  `examples/chapters.yml`.
 
 ```yaml
 encode:
@@ -291,7 +342,12 @@ encode:
   ttsOpts:
     voice: es-ES-ElviraNeural
     music: { track: ambient-gold, full: 0.85, duck: 0.16, lead: 1.2, gapRaise: 3.0 }  # pista incluida (alias)
-  intro: { engine: ffmpeg, title: 'Mi Web App', logo: assets/logo.png, result: out/demo-intro.mp4 }
+  intro: { engine: html, template: mesh, typewriter: true, title: 'Mi Web App', matchCut: true, result: out/demo-final.mp4 }
+  outro: { engine: html, title: 'Pruébalo', cta: 'Empieza ya', url: 'github.com/me/app' }
+  lowerThirds: { hold: 3.0 }
+  watermark: { text: 'Mi Marca', pos: br }
+  sfx: { gain: 0.8 }              # necesita audio en audio/sfx/ (click/whoosh/key/chime)
+  reframe: ['9:16', '1:1']
 ```
 
 ---

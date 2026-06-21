@@ -2,9 +2,11 @@
 
 > 🌐 [English](AESTHETICS.md) · **Español**
 
-Guía de las cuatro mejoras estéticas: **elección de pistas**, **subtítulos estilizados**,
-**intro de marca** y **música de fondo con ducking**. Todo se configura desde el bloque
-`encode:` del `.yml`. Para el contexto y las decisiones de diseño, ver también el plan en
+Guía de las opciones estéticas. Las cuatro primeras (**elección de pistas**, **subtítulos
+estilizados**, **intro de marca**, **música de fondo con ducking**) se configuran desde el bloque
+`encode:`. El resto son **efectos de coreografía in-page** (dibujados en vivo durante la grabación,
+§5) y más efectos de **post-producción** (SFX, reencuadre, outro, lower-thirds, watermark, plantillas
+de intro y match-cut; §6–§11). Para el contexto y las decisiones de diseño, ver también el plan en
 `~/.claude/plans/`.
 
 Ejemplos listos para ejecutar:
@@ -14,6 +16,12 @@ Ejemplos listos para ejecutar:
 | `examples/voice-only.yml`  | Vídeo + audio **sin** subtítulos |
 | `examples/styled-subs.yml` | Subtítulos "trazo limpio" (sin caja) + fades |
 | `examples/intro-music.yml` | Intro + voz + subs + música con ducking |
+| `examples/effects.yml`     | Spotlight, keycaps, scroll suave, variantes de click |
+| `examples/annotate.yml`    | Callouts (arrow/box/circle) + barrido de resaltado |
+| `examples/sfx.yml`         | SFX sincronizados con los pasos + reencuadre (9:16, 1:1) |
+| `examples/chapters.yml`    | Lower-thirds (títulos de capítulo) + watermark |
+| `examples/outro.yml`       | Intro + demo + outro con una misma cama musical continua |
+| `examples/match-cut.yml`   | Plantilla de intro animada + match-cut hacia la demo |
 
 ```bash
 node examples/mock-server.mjs           # backend determinista (127.0.0.1:4317)
@@ -171,11 +179,199 @@ el clip.
 
 ---
 
+## 5. Efectos de atención in-page (en vivo durante la grabación)
+
+Estos son **pasos**, no claves de `encode` — los dibuja la capa inyectada mientras grabas, así que
+aparecen en el contact-sheet sin pasada de encode. Se renderizan sobre un overlay en espacio de
+pantalla que está contra-transformado respecto al zoom de cámara, así que **siguen el elemento
+correctamente incluso a mitad de zoom**. La referencia del esquema de cada paso está en
+[GUIA_DE_USO.md §3](GUIA_DE_USO.md#3-el-esquema-del-guión-yaml); recetas de ejemplo:
+`examples/effects.yml` y `examples/annotate.yml`.
+
+- **Spotlight / máscara de atención** — atenúa todo menos un elemento (el look de Screen Studio).
+  Úsalo suelto (`spotlight: { sel, dim }`) o acoplado a un auto-zoom (`zoomFit: { sel, spotlight: true }`).
+  `spotlightOff` lo quita; `resetZoom` lo quita automáticamente. Mejor sobre lo único que el
+  espectador debe mirar — un resultado, un botón, un KPI.
+- **Keycaps** — muestra atajos pulsados como cápsulas (`keycap: 'cmd+k'` → ⌘ + K), con glifos mapeados
+  (`cmd`→⌘, `enter`→⏎, `shift`→⇧…). Esencial para apps guiadas por atajos. Nota: el tecleo despacha
+  eventos de input, no pulsaciones reales, así que las keycaps se **declaran**, no se capturan —
+  añádelas donde quieras mostrar la tecla.
+- **Callouts / anotaciones** — `annotate: { sel, shape, text, side, color }` dibuja una flecha / caja /
+  círculo anclado a un elemento, con una etiqueta opcional. Convierte una demo en casi un tutorial.
+  `annotateOff` (y `resetZoom`) los quitan.
+- **Barrido de resaltado** — `highlight: { sel, mode }` barre un marcador animado (`marker`, blend
+  multiply) o `underline` sobre una frase o un valor.
+- **Pulido del cursor y el click** — `move: { overshoot, trail }` da al cursor un pequeño rebote al
+  llegar y un trail que se desvanece; `scroll: { sel, ms }` desplaza la página con easing (un salto
+  de scroll brusco es el típico delator de que una demo está scripteada); `click` gana
+  `variant: single|double|right`, un anillo `ripple` y un `pop` (el elemento se escala brevemente al
+  interactuar).
+
+---
+
+## 6. SFX sincronizados con los pasos (`encode.sfx`)
+
+Efectos de sonido cortos de un disparo colocados sobre los **beats grabados** —clicks, zooms,
+keycaps— y mezclados **encima** de la música (ya con ducking). El recorder escribe un sidecar
+`<video>.events.json` con un timestamp por cada beat visual; la etapa de SFX mapea cada `kind` a un
+sonido y los inserta con `adelay`+`amix` (`normalize=0`, así se preserva el nivel de la cama). Cuando
+se antepone una intro, los tiempos de evento se desplazan por la duración de la intro para que los
+SFX sigan sincronizados. Ejemplo: `examples/sfx.yml`.
+
+```yaml
+encode:
+  narrateMp4: out/demo.mp4
+  ttsOpts: { voice: es-ES-ElviraNeural, music: { track: ambient-gold } }
+  sfx:
+    gain: 0.8                 # ganancia global (0..1+)
+    # dir: assets/sfx         # opcional: tu propia carpeta de SFX
+    map:                      # sobrescribe el mapa kind → sonido (null silencia un kind)
+      click: click
+      zoom: { name: whoosh, gain: 0.5 }
+      keycap: key
+```
+
+**Tú aportas el audio.** El motor no trae binarios de sonido: deja archivos cortos en `audio/sfx/`
+(o apunta `dir` a tu propia carpeta). La resolución funciona como las pistas de música (nombre exacto,
+alias/slug o ruta) pero los SFX son **opcionales** — si un nombre no resuelve, ese efecto se salta (el
+render nunca falla por un SFX que falta). Mapa por defecto `kind → name`: `click`/`nav` → `click`,
+`zoom`/`zoomOut`/`spotlight` → `whoosh`, `keycap` → `key`, `success` → `chime`;
+`type`/`move`/`scroll` van silenciados. Así que dejar `click.wav`, `whoosh.wav`, `key.wav`,
+`chime.wav` basta para tener SFX. Ver `audio/sfx/README.md`.
+
+---
+
+## 7. Reencuadre multi-formato (`encode.reframe`)
+
+Exporta relaciones de aspecto extra desde la **misma** grabación — multiplicando tu alcance en redes
+desde una sola toma. La fuente se escala para **encajar** (sin recortar contenido) y se centra sobre
+una **copia de sí misma difuminada y agrandada** (un relleno que parece intencional), así un metraje
+16:9 se lee con naturalidad como 9:16 o 1:1. Los reencuadres van al final, sobre el vídeo ya
+terminado/compuesto, así que heredan la intro/outro, la música, los lower-thirds y el watermark.
+Ejemplo: `examples/sfx.yml`.
+
+```yaml
+encode:
+  mp4: out/demo.mp4
+  reframe: ['9:16', '1:1']          # → out/demo-9x16.mp4, out/demo-1x1.mp4
+  # reframe: { ratios: ['9:16'], opts: { blur: 24 }, out: { '9:16': out/vertical.mp4 } }
+```
+
+Esta es la versión de **relleno difuminado** (no un recorte inteligente que sigue la acción). Las
+dimensiones de salida se derivan de la fuente y se redondean a pares (compatible con yuv420p).
+
+---
+
+## 8. Outro de cierre (`encode.outro`)
+
+El espejo de la intro: una tarjeta de cierre añadida **después** de la demo con un CTA, la URL del
+repo y el logo. Los mismos dos motores que la intro (`html` por defecto — `assets/outro.html`, con un
+fondo de gradiente mesh animado; o `ffmpeg`). Con un outro, la unión es un único concat
+`intro + demo + outro` y la **cama musical abarca todo** de forma continua. Ejemplo: `examples/outro.yml`.
+
+```yaml
+encode:
+  narrateMp4: out/demo.mp4
+  ttsOpts: { voice: es-ES-ElviraNeural, music: { track: ambient-gold } }
+  intro: { engine: html, title: 'Mi Web App' }
+  outro:
+    engine: html              # html | ffmpeg
+    result: out/demo-final.mp4
+    title: '¿Quieres probarlo?'
+    subtitle: 'Gracias por ver el vídeo'
+    cta: 'Empieza ya'
+    url: 'github.com/me/app'
+    bg: '#0B0F1A'
+    duration: 3.0
+    # logo: assets/logo.png
+```
+
+---
+
+## 9. Lower-thirds / títulos de capítulo (`encode.lowerThirds`)
+
+Nombra cada sección de la demo con una tira animada (abajo a la izquierda, slide-in + fade),
+renderizada con libass. Reutiliza la línea de tiempo: un **paso** `chapter: 'Título'` emite un evento
+de capítulo, y `encode.lowerThirds` convierte cada uno en un lower-third que dura `hold` segundos (o
+hasta el siguiente capítulo cuando `hold: 0`). Quemado sobre el final ya compuesto, así que abarca
+correctamente con la intro y lo hereda cualquier reencuadre. Ejemplo: `examples/chapters.yml`.
+
+```yaml
+steps:
+  - chapter: '1. Pregunta en lenguaje natural'
+  # …beat…
+  - chapter: '2. Dashboard en vivo'
+encode:
+  mp4: out/demo.mp4
+  lowerThirds:
+    hold: 3.0                 # segundos visible (0 = hasta el siguiente capítulo)
+    # fontSize: 30, boxColor: '#111418', marginL: 56, marginV: 70, slide: 44, fadeIn/Out: 220
+```
+
+---
+
+## 10. Watermark / marca de agua en la esquina (`encode.watermark`)
+
+Una marca persistente en la esquina sobre todo el vídeo final: **texto** (vía libass) o un **PNG de
+logo** (vía `overlay`). Se aplica al final ya compuesto, así que los reencuadres la heredan. Ejemplo:
+`examples/chapters.yml`.
+
+```yaml
+encode:
+  mp4: out/demo.mp4
+  watermark:
+    text: 'Mi Marca'          # o:  logo: assets/logo.png
+    pos: br                   # br | bl | tr | tl
+    opacity: 0.5
+    # margin: 28, color: '#FFFFFF', fontSize: <auto>
+```
+
+---
+
+## 11. Plantillas de intro, typewriter y match-cut
+
+La intro HTML (`engine: html`) gana **temas** y un título con **máquina de escribir**, y la unión
+intro→demo puede ser una disolvencia **match-cut** en vez de un corte seco. Ejemplo: `examples/match-cut.yml`.
+
+```yaml
+encode:
+  mp4: out/demo.mp4
+  intro:
+    engine: html
+    template: mesh            # minimal | bold | terminal | mesh
+    typewriter: true          # teclea el título carácter a carácter
+    title: 'Acme Analytics'
+    subtitle: 'datos en lenguaje natural'
+    accent: '#6C5CE7'         # acento del tema (blobs mesh, subtítulo bold, caret de terminal…)
+    duration: 2.6
+    matchCut: true            # disuelve/zoom intro → demo en vez de un corte seco
+    result: out/demo-final.mp4
+  # transition: { duration: 0.5, transition: fade }   # global: xfade TODAS las uniones (fade|dissolve|fadeblack|wipeleft|…)
+```
+
+- **Plantillas** — `minimal` (glow radial suave, por defecto), `bold` (tipografía pesada sobre un baño
+  de acento), `terminal` (prompt `$` monoespaciado con caret parpadeante), `mesh` (fondo de gradiente
+  mesh animado).
+- **Match-cut** — `intro.matchCut` (o un `encode.transition` global) une los clips con un `xfade`
+  zoom-disolvencia en el límite en vez de `concat`; el push-in de la intro fluye hacia el primer frame
+  de la demo, así que el corte no es obvio. El audio también va con crossfade. Es una
+  **disolvencia+zoom**, no un morph geométrico de un logo sobre un elemento real.
+
+---
+
 ## Referencia de archivos (motor)
 
+- `src/cursor-kit.js` — los efectos in-page (§5): la capa overlay contra-transformada,
+  `spotlight`, `keycap`, `annotate`/`highlight`, overshoot/trail del cursor, `scrollToSel` con
+  easing, variantes de click + `pop`.
 - `src/encode.js` — `buildAss`/`burnSubs` (subs ASS), `addMusicBed`/`mixVoiceAndMusic`
-  (ducking), `buildIntroFfmpeg`/`concatVideos`/`toMp4Silent` (intro), `probeSize`/`probeHasAudio`.
+  (ducking), `buildIntroFfmpeg`/`concatVideos`/`toMp4Silent` (intro), `probeSize`/`probeHasAudio`,
+  `mapSfx`/`muxSfx` (SFX, §6), `reframe`/`aspectToCanvas` (reencuadre, §7), `buildLowerThirds`/
+  `burnLowerThirds` (§9), `burnWatermark` (§10), `xfadeJoin`/`xfadeOffsets` (match-cut, §11).
+- `src/recorder.js` — el vocabulario de pasos del `Driver` + `mark()`, que escribe el sidecar
+  `<video>.events.json` que consumen las etapas de SFX y lower-thirds.
+- `src/tracks.js` — `resolveTrack` (música) y `resolveSfx` (SFX opcionales, devuelve null si no casa).
 - `src/tts.js` — `getNarration` (tiempos de voz) + `musicEnvelope` (con `offset` de intro).
-- `src/run.js` — `applyEncode` orquesta las etapas y aplica la música como capa final continua
-  (intro + cama); `buildIntroClip`/`recordIntroHtml` (motores de intro).
-- `assets/intro.html` — plantilla de la intro HTML.
+- `src/run.js` — `applyEncode` orquesta las etapas: intro/outro como marcos (o `xfadeJoin` del
+  match-cut), la cama musical continua, los SFX, lower-thirds + watermark, y los reencuadres.
+- `assets/intro.html` / `assets/outro.html` — la intro HTML (temas/typewriter) y las tarjetas de outro.

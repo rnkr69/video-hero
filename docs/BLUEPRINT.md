@@ -462,3 +462,36 @@ Ideas ordered by value/effort:
 | Can't find the widget element | it's in shadow DOM | resolve `host >>> inner` |
 | Blurry video | no HiDPI | `deviceScaleFactor: 2` |
 | Zoom clips content | `transform-origin` misplaced | origin toward the side to preserve; lower the scale |
+
+---
+
+## 12. Effects layer — validated decisions (phases 1–2)
+
+Most of the §10 roadmap is now implemented (richer cursor, intro/outro + branding, multi-format,
+keystroke highlight, attention effects). Four decisions are worth recording so they aren't
+re-litigated — full usage in [AESTHETICS.md](AESTHETICS.md):
+
+1. **In-page overlays live on a counter-transformed layer, not on `documentElement`.** The camera
+   zoom is a CSS `transform` on `<html>`, which also re-anchors fixed descendants. Spotlight,
+   keycaps, callouts and the highlight sweep render on one fixed overlay whose transform is set each
+   frame to the **inverse** of the live zoom matrix, so they stay in screen space and track elements
+   mid-zoom. A ref-counted rAF loop keeps the counter-transform current only while something is
+   showing (zero idle cost). The synthetic cursor stays on `documentElement` (unchanged).
+
+2. **All burned text goes through libass, never `drawtext`.** The bundled `ffmpeg-static` (Linux
+   build) omits `drawtext` (it needs libharfbuzz). So lower-thirds, watermark, intro/outro text and
+   contact-sheet labels share one positioned-text path (`buildPosAss`/`buildAss`), with fonts staged
+   next to the `.ass` and `fontsdir=.` + `cwd` to sidestep the Windows drive-colon in filter args.
+
+3. **A `<video>.events.json` sidecar timestamps every visual beat.** Clicks/zooms/types/keycaps were
+   previously untimed; `Driver.mark()` records them (same `t0` as the idle/captions sidecars). This
+   one piece of infra unlocked step-synced SFX and lower-thirds, and is the hook for future
+   event-driven post-pro (transitions, speed ramps). SFX/chapter times are shifted by the intro
+   length when composing, exactly like the music envelope's `offset`.
+
+4. **Match-cut is an `xfade` zoom-dissolve, not a geometric morph.** Aligning a logo to a real DOM
+   element is fragile and expensive; instead the intro push-zooms and the intro→demo boundary is an
+   `xfade` (audio `acrossfade`d too) computed from the real clip durations (`xfadeOffsets`). It gets
+   ~80% of the "not pasted on" effect at a fraction of the cost. Intra-demo transitions and
+   action-following smart-crop were deliberately deferred (they need splitting the continuous webm at
+   event boundaries).

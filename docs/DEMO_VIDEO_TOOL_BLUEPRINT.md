@@ -461,3 +461,39 @@ Ideas ordenadas por valor/esfuerzo:
 | No encuentra el elemento del widget | está en shadow DOM | resolver `host >>> inner` |
 | Vídeo borroso | sin HiDPI | `deviceScaleFactor: 2` |
 | Zoom recorta contenido | `transform-origin` mal puesto | origen hacia el lado a conservar; baja la escala |
+
+---
+
+## 12. Capa de efectos — decisiones validadas (fases 1–2)
+
+La mayor parte del roadmap del §10 ya está implementada (cursor más rico, intro/outro + marca,
+multi-formato, resaltado de tecleo, efectos de atención). Cuatro decisiones merecen quedar
+registradas para no re-litigarlas — el uso completo está en [MEJORAS_ESTETICAS.md](MEJORAS_ESTETICAS.md):
+
+1. **Los overlays in-page viven en una capa contra-transformada, no en `documentElement`.** El zoom
+   de cámara es un `transform` CSS sobre `<html>`, que además re-ancla los descendientes fixed. La
+   máscara de atención (spotlight), las keycaps, los callouts y el barrido de resaltado se renderizan
+   sobre un único overlay fixed cuya transform se fija en cada frame a la **inversa** de la matriz de
+   zoom en vivo, así se quedan en espacio de pantalla y siguen los elementos a mitad de zoom. Un loop
+   rAF con conteo de referencias mantiene la contra-transform al día solo mientras algo está visible
+   (coste cero en reposo). El cursor sintético se queda en `documentElement` (sin cambios).
+
+2. **Todo el texto quemado pasa por libass, nunca por `drawtext`.** El `ffmpeg-static` empacado (build
+   de Linux) omite `drawtext` (necesita libharfbuzz). Así que lower-thirds, watermark, texto de
+   intro/outro y etiquetas del contact-sheet comparten una única ruta de texto posicionado
+   (`buildPosAss`/`buildAss`), con las fuentes preparadas junto al `.ass` y `fontsdir=.` + `cwd` para
+   sortear el dos-puntos de unidad de Windows en los args de filtro.
+
+3. **Un sidecar `<video>.events.json` marca el timestamp de cada beat visual.** Clicks/zooms/types/
+   keycaps antes no estaban temporizados; `Driver.mark()` los registra (mismo `t0` que los sidecars
+   idle/captions). Esta única pieza de infra desbloqueó los SFX sincronizados con los pasos y los
+   lower-thirds, y es el gancho para futura post-pro guiada por eventos (transiciones, rampas de
+   velocidad). Los tiempos de SFX/capítulos se desplazan por la duración de la intro al componer,
+   exactamente como el `offset` de la envolvente de música.
+
+4. **El match-cut es un zoom-disolvencia `xfade`, no un morph geométrico.** Alinear un logo a un
+   elemento real del DOM es frágil y caro; en su lugar la intro hace un push-zoom y el límite
+   intro→demo es un `xfade` (con el audio también en `acrossfade`) calculado a partir de las
+   duraciones reales de los clips (`xfadeOffsets`). Consigue ~80% del efecto "no está pegado" a una
+   fracción del coste. Las transiciones intra-demo y el smart-crop que sigue la acción se aplazaron
+   deliberadamente (necesitan partir el webm continuo en los límites de evento).
