@@ -22,7 +22,7 @@ const rawWebms = (out) => {
     .sort((a, b) => b.t - a.t);
 };
 
-const SIDECARS = ['', '.idle.json', '.captions.json', '.events.json'];
+const SIDECARS = ['', '.idle.json', '.captions.json', '.events.json', '.capture.json'];
 const rmQuiet = (p) => { try { if (existsSync(p)) { rmSync(p, { recursive: true, force: true }); return 1; } } catch { /* ignore */ } return 0; };
 
 // Keep only the newest `keep` recordings in raw/; delete older ones (+ their sidecars).

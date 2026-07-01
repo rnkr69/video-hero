@@ -164,6 +164,41 @@ steps:
   - chapter: '1. Ask in natural language'
 ```
 
+### Capture window (trim to the content, not the splash)
+
+Playwright's `recordVideo` grabs the **whole** context lifecycle, so the raw always includes a
+loading splash up front, the cursor choreography before the content, and dead tail at the end. The
+optional top-level **`capture`** block lets the app declare its content span **in-band**: the engine
+stamps the exact moment each mark fires (in the same clock as the video), trims the webm to that
+window after recording, and **rebases** every sidecar (captions/idle/events) to the new zero. The
+`encode` block then runs over the already-clean window. It's **opt-in and fully backward compatible**
+— without `capture`, nothing changes.
+
+```yaml
+capture:
+  start: 'body[data-state="playing"]'   # a selector: the engine watches the DOM (MutationObserver)
+  end:   'body[data-state="done"]'
+  pad: { before: 0.0, after: 0.3 }       # optional seconds of breathing room around the window
+  closeOnEnd: true                       # optional (default true): close the context as soon as `end`
+```
+
+`start`/`end` accept either a **selector string** (plain CSS, like `waitFor`) or an **object**:
+`{ selector: '…' }` or `{ event: 'name' }`. You can mix them (e.g. `start` by event, `end` by
+selector). For the event form, the app marks its own moments:
+
+```js
+// In your app. The optional chain makes it a no-op outside a recording, so it can live in prod code.
+window.__demorecorder?.mark('start');   // …and later: window.__demorecorder?.mark('end');
+// Equivalent, framework-agnostic:
+window.dispatchEvent(new CustomEvent('demorecorder:mark', { detail: { name: 'start' } }));
+```
+
+Semantics: the first `start`, and the first `end` at/after it (one window in v1). If `start` never
+fires the video is **not** trimmed (with a warning — it's never dropped silently); if `end` never
+fires the raw's tail is kept. Only `record`/`run` trim; `probe` never does. The trimmed webm is
+written as `<name>.win.webm` (the raw is kept for debugging). Try it:
+`demo-recorder run examples/capture.yml`.
+
 ---
 
 ## 4. Recording your real web app, step by step

@@ -461,3 +461,44 @@ export function cursorKit() {
     },
   };
 }
+
+// Injected (only while recording with a `capture` block) via page.addInitScript(recorderBridge, cfg).
+// Runs IN THE BROWSER — keep it self-contained. Lets the app declare, in-band, when the real content
+// starts/ends so the engine can trim the raw to that window (see src/capture.js). Two ways to mark,
+// both converging on window.__demorecorderMark(name) (a page.exposeBinding that stamps Node-side, in
+// the SAME clock as clicks/captions/idle → zero skew with the video):
+//   1) window.__demorecorder.mark('start'|'end')   (no-op when not recording, so it can live forever)
+//   2) window.dispatchEvent(new CustomEvent('demorecorder:mark', { detail: { name: 'start' } }))
+//   3) a DOM selector the engine watches (config.marks[].selector) → MutationObserver
+// `cfg` = { marks: [{ name, selector? }] } — only selector marks need an observer here.
+export function recorderBridge(cfg) {
+  const fire = (name) => {
+    // The binding may not exist (e.g. app left the mark() call in outside a recording): stay a no-op.
+    try { if (name && window.__demorecorderMark) window.__demorecorderMark(String(name)); } catch { /* ignore */ }
+  };
+  // Idempotent across re-injections (addInitScript runs on every navigation); dedupe per document.
+  if (!window.__demorecorder) {
+    window.__demorecorder = { mark: fire };
+    window.addEventListener('demorecorder:mark', (e) => fire(e && e.detail && e.detail.name));
+  }
+
+  const marks = (cfg && cfg.marks || []).filter((m) => m && m.selector);
+  if (!marks.length) return;
+  const fired = new Set();
+  const check = () => {
+    for (const m of marks) {
+      if (fired.has(m.name)) continue;
+      let hit = false;
+      try { hit = !!document.querySelector(m.selector); } catch { /* bad selector → ignore */ }
+      if (hit) { fired.add(m.name); fire(m.name); }
+    }
+  };
+  const start = () => {
+    check(); // the selector may already match at injection time
+    if (fired.size === marks.length) return;
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { subtree: true, childList: true, attributes: true });
+  };
+  if (document.documentElement) start();
+  else document.addEventListener('DOMContentLoaded', start, { once: true });
+}

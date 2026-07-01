@@ -62,6 +62,18 @@ export function frameAt(input, t, output) {
   return run(['-y', '-ss', String(t), '-i', input, '-frames:v', '1', output]);
 }
 
+// Frame-accurate trim of a webm to [start, end] seconds, re-encoding to webm (VP9). Used by the
+// capture-window feature (src/capture.js): the raw's header duration is a lie, so we cut with the
+// `trim` filter (measured against the decoded timeline) rather than seek flags. Video-only — the
+// recordings carry no audio. libvpx-vp9 runs ~2× realtime here, which is fine for the win we get.
+export function trimWindow(input, output, start, end) {
+  const s = Math.max(0, start).toFixed(3);
+  const e = Math.max(Number(s) + 0.001, end).toFixed(3);
+  const filter = `[0:v]trim=start=${s}:end=${e},setpts=PTS-STARTPTS[out]`;
+  return run(['-y', '-i', input, '-filter_complex', filter, '-map', '[out]', '-an',
+    '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '30', '-pix_fmt', 'yuv420p', output]);
+}
+
 // Idle-speedup: compress the "dead time" (the scripted holds) while keeping action at
 // 1x. The recorder writes the idle segments to `<video>.idle.json`; we read them (or
 // take `opts.idle`), build a piecewise setpts (split → trim → setpts → concat) and
