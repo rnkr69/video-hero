@@ -24,7 +24,7 @@
     "url": "https://github.com/rnkr69/video-hero/issues"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bin": {
     "demo-recorder": "bin/demo-recorder.js"
