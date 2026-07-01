@@ -164,6 +164,41 @@ steps:
   - chapter: '1. Pregunta en lenguaje natural'
 ```
 
+### Ventana de captura (recorta al contenido, no al splash)
+
+`recordVideo` de Playwright graba **todo** el ciclo de vida del contexto, así que el raw siempre
+incluye el splash de carga al principio, la coreografía del cursor antes del contenido y cola muerta
+al final. El bloque opcional de nivel superior **`capture`** deja que la app declare su tramo de
+contenido **en banda**: el motor sella el instante exacto de cada marca (en el mismo reloj que el
+vídeo), recorta el webm a esa ventana tras grabar y **rebasa** todos los sidecars
+(captions/idle/events) al nuevo cero. El bloque `encode` corre luego sobre la ventana ya limpia. Es
+**opt-in y 100% retrocompatible** — sin `capture`, nada cambia.
+
+```yaml
+capture:
+  start: 'body[data-state="playing"]'   # un selector: el motor vigila el DOM (MutationObserver)
+  end:   'body[data-state="done"]'
+  pad: { before: 0.0, after: 0.3 }       # segundos opcionales de respiro alrededor de la ventana
+  closeOnEnd: true                       # opcional (def. true): cierra el contexto en cuanto llega `end`
+```
+
+`start`/`end` aceptan una **cadena selector** (CSS plano, como `waitFor`) o un **objeto**:
+`{ selector: '…' }` o `{ event: 'nombre' }`. Se pueden mezclar (p. ej. `start` por evento, `end` por
+selector). En el modo por evento, la app marca sus propios instantes:
+
+```js
+// En tu app. El optional chaining lo hace no-op fuera de una grabación, así que puede quedarse en prod.
+window.__demorecorder?.mark('start');   // …y más tarde: window.__demorecorder?.mark('end');
+// Equivalente, sin depender del framework:
+window.dispatchEvent(new CustomEvent('demorecorder:mark', { detail: { name: 'start' } }));
+```
+
+Semántica: el primer `start`, y el primer `end` posterior (una sola ventana en v1). Si `start` nunca
+llega, el vídeo **no** se recorta (con un aviso — nunca se descarta en silencio); si `end` nunca
+llega, se conserva la cola del raw. Solo `record`/`run` recortan; `probe` nunca. El webm recortado se
+escribe como `<nombre>.win.webm` (el raw se conserva para depurar). Pruébalo:
+`demo-recorder run examples/capture.yml`.
+
 ---
 
 ## 4. Grabar tu web real, paso a paso

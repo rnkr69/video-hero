@@ -51,6 +51,10 @@ const HELP = `demo-recorder <comando>
 Carpeta out/:  finales sueltos en out/  ·  grabaciones en out/raw/ (últimas 3)  ·  contact-sheets en out/frames/
                ·  intermedios en out/work/ (se autolimpian).  Purga a demanda:  demo-recorder clean [--all]
 
+Bloque capture (opcional, en el YAML): recorta la grabación al tramo de contenido que la app declara en
+banda —  capture: { start, end, pad?, closeOnEnd? }  con start/end por selector DOM o por evento
+(window.__demorecorder.mark('start'|'end')).  Ejemplo:  demo-recorder run examples/capture.yml
+
 Bucle eficiente: 1) demo-recorder probe  → arregla selectores/auth   2) demo-recorder record → afina timing/zoom
                  3) demo-recorder encode → voz/subtítulos/mp4 una sola vez al final.
 

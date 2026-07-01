@@ -26,6 +26,7 @@ async function serveStatic(req, res) {
   let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (rel === '/') rel = '/index.html';
   else if (rel === '/dashboard') rel = '/dashboard.html';
+  else if (rel === '/capture') rel = '/capture.html';
   const path = normalize(join(APP_DIR, rel));
   if (!path.startsWith(APP_DIR)) { res.writeHead(403); res.end('forbidden'); return; }
   try {

@@ -1,0 +1,36 @@
+# Capture window — trim the recording to the app's declared content span.
+# Run the mock server first:  demo-recorder mock   (or: node examples/mock-server.mjs)
+# Then:                       demo-recorder run examples/capture.yml
+#
+# The /capture page shows ~2s of black loading splash, then flips <body data-state> to
+# "playing" (~2s) and "done" (~6s). The `capture` block below watches those states: the engine
+# stamps the exact moment each one first matches and trims the raw to that ~4s window, dropping the
+# loading splash and the dead tail. All sidecars (captions/idle/events) are rebased to the new zero.
+
+url: http://127.0.0.1:4317/capture
+width: 1280
+height: 800
+scale: 2
+headless: true
+out: out
+
+# Trim to the content span. `start`/`end` accept a selector (string) or an object:
+#   { selector: '…' }  — watch the DOM (a MutationObserver fires when it first matches)
+#   { event: 'name' }  — the app calls window.__demorecorder.mark('name')
+# You can mix the two. `pad` adds breathing room (seconds); `closeOnEnd` (default true) closes the
+# context as soon as `end` fires, so the recording doesn't keep rolling over dead tail.
+capture:
+  start: 'body[data-state="playing"]'
+  end:   'body[data-state="done"]'
+  pad: { before: 0.0, after: 0.3 }
+
+# A caption dropped DURING the content — after the trim it must land at the right rebased timestamp
+# (its raw ~3s becomes ~1s once the ~2s splash is cut).
+steps:
+  - hold: 3000
+  - caption: 'Contenido en reproducción'
+  - hold: 4000
+
+# Encode over the already-clean window — no splash to skip, no manual trimming.
+encode:
+  captionsMp4: out/capture.mp4

@@ -2,8 +2,9 @@ import { chromium } from 'playwright';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { cursorKit } from './cursor-kit.js';
+import { cursorKit, recorderBridge } from './cursor-kit.js';
 import { rawDir, ensureDir } from './layout.js';
+import { normalizeCapture } from './capture.js';
 
 // Where Playwright caches downloaded browsers, per platform.
 function playwrightBrowsersDir() {
@@ -48,12 +49,31 @@ class Driver {
     this.idle = [];         // [start,end] seconds of "nothing happening" (the holds)
     this.captions = [];     // [{t,text}] caption events; each lasts until the next one
     this.events = [];       // [{t,kind,...}] visual beats (clicks/zooms/types…) for step-synced SFX
+    this.captureMarks = { start: null, end: null }; // capture-window marks (see markCapture)
+    // Resolves when the `end` capture mark lands, so record() can close the context early (drop the
+    // dead tail). Never rejects; if end never comes, the flow completes normally instead.
+    this._captureEnded = new Promise((res) => { this._resolveCaptureEnd = res; });
   }
   // Timestamp a visual beat onto the video timeline (same t0 as idle/captions). Consumed by the
   // SFX stage via the <video>.events.json sidecar.
   mark(kind, extra = {}) {
     this.events.push({ t: (Date.now() - this.t0) / 1000, kind, ...extra });
   }
+  // Stamp a capture in/out mark, Node-side, in the SAME clock as mark()/hold()/caption() → the
+  // timestamp lines up exactly with the video. Called from the page.exposeBinding the recorder
+  // installs. First-wins: the first `start`, and the first `end` at or after that start.
+  markCapture(name) {
+    const t = (Date.now() - this.t0) / 1000;
+    if (name === 'start') { if (this.captureMarks.start == null) this.captureMarks.start = t; return; }
+    if (name === 'end') {
+      if (this.captureMarks.end != null) return;
+      if (this.captureMarks.start != null && t < this.captureMarks.start) return; // end before start → ignore
+      this.captureMarks.end = t;
+      this._resolveCaptureEnd();
+    }
+  }
+  // A promise that settles when `end` is marked (for early context close).
+  captureEnded() { return this._captureEnded; }
   // The element's center + size in VIDEO pixels (CSS px × deviceScaleFactor), for the focus
   // timeline the smart-crop reframe follows. Best-effort: returns null if it can't resolve.
   async _rect(sel) {
@@ -239,7 +259,7 @@ export async function saveAuth(flow, { url, out = 'auth.json', headless = false,
 // caller owns navigation and closing.
 export async function openSession({
   outDir = 'out', width = 1280, height = 800, scale = 2, headless = true, autoZoom = false,
-  storageState, routes, waitTimeout, recordVideo = false,
+  storageState, routes, waitTimeout, recordVideo = false, capture,
 } = {}) {
   const browser = await chromium.launch({ headless, executablePath: execPathFor(headless) });
   const context = await browser.newContext({
@@ -259,6 +279,14 @@ export async function openSession({
   driver.autoZoom = autoZoom;       // when true, every non-nav click auto-frames its target
   driver.scale = scale;             // deviceScaleFactor → CSS px × scale = video px (for smart-crop)
   if (waitTimeout) driver.waitTimeout = waitTimeout;
+  // Capture window (opt-in, recording only): let the app declare its content span in-band. Expose a
+  // binding that stamps the mark Node-side (same clock as the video), and inject the browser bridge
+  // that calls it — from window.__demorecorder.mark(), a CustomEvent, or a watched DOM selector.
+  if (recordVideo && capture) {
+    driver.capture = capture;
+    await page.exposeBinding('__demorecorderMark', (_src, name) => driver.markCapture(name));
+    await page.addInitScript(recorderBridge, normalizeCapture(capture));
+  }
   return { browser, context, page, driver };
 }
 
@@ -266,13 +294,29 @@ export async function record(flow, opts = {}) {
   const { url, onGoto } = opts;
   const { browser, context, page, driver } = await openSession({ ...opts, recordVideo: true });
   if (url) { await driver.goto(url); if (onGoto) await onGoto(page); }
-  let videoPath;
+  let videoPath, span;
+  // When a capture end-mark is expected (and closeOnEnd isn't disabled), race the flow against it so
+  // we can close the context the moment the content ends — trimming the dead tail at the source. The
+  // trim in applyCapture also discards anything past the end mark, so this is purely an optimization.
+  const closeOnEnd = !!(opts.capture && opts.capture.closeOnEnd !== false);
   try {
-    await flow(driver, page);
+    const flowDone = flow(driver, page);
+    if (closeOnEnd) {
+      // If we abandon the flow after an early close, its pending Playwright calls will reject on a
+      // closed context — swallow that so it doesn't surface as an unhandled rejection.
+      flowDone.catch(() => {});
+      await Promise.race([flowDone, driver.captureEnded()]);
+    } else {
+      await flowDone;
+    }
   } finally {
     // NOTE: no `return` here — a `return` in finally would swallow any error thrown
     // by the flow and silently leave you with a truncated recording.
     await context.close(); // finalizes the .webm
+    // Total node span from t0 to close — recorded in the capture sidecar for debugging (it runs a
+    // touch longer than the encoded duration because frames stop before close finalizes; that tail
+    // gap must NOT be treated as a head offset — see capture.js).
+    span = (Date.now() - driver.t0) / 1000;
     videoPath = await page.video()?.path();
     await browser.close();
   }
@@ -288,6 +332,11 @@ export async function record(flow, opts = {}) {
   }
   if (videoPath && driver.events.length) {
     try { writeFileSync(`${videoPath}.events.json`, JSON.stringify({ events: driver.events })); }
+    catch { /* non-fatal */ }
+  }
+  // Capture marks (node clock) + the total node span, so applyCapture can align to the video.
+  if (videoPath && opts.capture) {
+    try { writeFileSync(`${videoPath}.capture.json`, JSON.stringify({ ...driver.captureMarks, span })); }
     catch { /* non-fatal */ }
   }
   return videoPath;

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Capture window — Acme Player</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #e8e9f0; background: #05060a;
+    }
+    /* The page declares its own state on <body>; the capture block watches this attribute.
+       - loading: black splash (the 2s the raw would otherwise waste up front)
+       - playing: the real content is on screen (capture `start`)
+       - done:    content finished (capture `end`) */
+    #stage {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      transition: background .4s ease;
+    }
+    body[data-state="loading"] #stage { background: #000; }
+    body[data-state="playing"] #stage,
+    body[data-state="done"] #stage {
+      background: radial-gradient(1200px 600px at 30% -10%, #1f3a4d, #12131a 60%);
+    }
+    .spinner {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 4px solid #ffffff22; border-top-color: #6c5ce7;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .content {
+      text-align: center; opacity: 0; transform: translateY(10px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+    body[data-state="playing"] .content,
+    body[data-state="done"] .content { opacity: 1; transform: none; }
+    body[data-state="loading"] .content { display: none; }
+    body[data-state="loading"] .spinner { display: block; }
+    body[data-state="playing"] .spinner,
+    body[data-state="done"] .spinner { display: none; }
+    h1 { font-size: 34px; margin: 0 0 8px; }
+    p { color: #aeb2c2; margin: 0; }
+    .badge {
+      display: inline-block; margin-top: 22px; padding: 6px 14px; border-radius: 999px;
+      background: #6c5ce7; color: #fff; font-weight: 600; letter-spacing: .3px;
+    }
+    body[data-state="done"] .badge { background: #00b894; }
+  </style>
+</head>
+<body data-state="loading">
+  <div id="stage">
+    <div class="spinner"></div>
+    <div class="content">
+      <h1>Acme Player</h1>
+      <p>Contenido en reproducción — la ventana de captura empieza aquí.</p>
+      <span class="badge" id="badge">▶ Reproduciendo</span>
+    </div>
+  </div>
+  <script type="module" src="/capture.js"></script>
+</body>
+</html>

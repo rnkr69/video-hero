@@ -23,6 +23,7 @@ import {
 import { narrateVideo, getNarration, musicEnvelope } from './tts.js';
 import { rawDir, workDir, ensureDir, pruneRaw, wipeWork } from './layout.js';
 import { resolveTrack, resolveSfx } from './tracks.js';
+import { applyCapture } from './capture.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -42,7 +43,7 @@ const norm = (arg) => (typeof arg === 'string' ? { sel: arg } : arg || {});
 const sessionOpts = (spec) => ({
   outDir: spec.out || 'out', width: spec.width, height: spec.height, scale: spec.scale,
   headless: spec.headless, autoZoom: spec.autoZoom, storageState: spec.storageState,
-  routes: spec.route, waitTimeout: spec.waitTimeout,
+  routes: spec.route, waitTimeout: spec.waitTimeout, capture: spec.capture,
 });
 
 // 1-based inclusive sub-range of steps (for iterating one beat). Combine with `route`
@@ -438,10 +439,14 @@ export async function runScript(file, { encode = true, from, to } = {}) {
     await doLogin(spec);
   }
 
-  const video = await record(async (d) => {
+  let video = await record(async (d) => {
     for (const step of steps) await runStep(d, step);
   }, { ...sessionOpts(spec), url: spec.url, onGoto: (page) => postNav(page, spec) });
   console.log('VIDEO:', video);
+
+  // Capture window (part of recording, so it runs even with --no-encode): trim the raw to the app's
+  // declared content span and rebase the sidecars. Without a `capture` block this is a no-op.
+  if (spec.capture) video = await applyCapture(spec, video);
 
   if (encode) { await applyEncode(spec, video); wipeWork(spec.out || 'out'); } // drop intermediates
   pruneRaw(spec.out || 'out', spec.keepRaw ?? 3); // keep the last few recordings, drop older ones
